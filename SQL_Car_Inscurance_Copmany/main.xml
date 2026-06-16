@@ -1,0 +1,1089 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="./sproject_html.xsl"?>
+<!DOCTYPE sproject SYSTEM "sproject.dtd">
+<sproject>
+    <course database="Oracle" version="11">
+        <cname>Databázové systémy</cname>
+            <code>BI-DBS.21</code>
+            <semester>DBS-2024</semester>
+            <seminar>Monday 12:45, Both weeks, paralelka 202401</seminar>
+    </course>
+        <author>
+            <aname>Aly Basal Mohamed Aly</aname>
+            <uname>xmoha010</uname>
+            <email>mohamedalibasal34@gmail.com</email>
+        </author>
+    <content>
+        <declaration>I declare that I have developed my semestral work independently. All the sources I used are listed in the section References.</declaration>
+            <title>Car Insurance Company</title>
+        <description>
+            <title>Description</title>
+                    <para>The Car Insurance Company Database project is meticulously designed to streamline and manage the critical data integral to car insurance operations.  Include some </para>
+                    <para>Key tables in the database such as Customers, Policies, Vehicles, Claims, Agents, Payments, and Branches. The Customers table contains personal and contact details for policyholders, linked to multiple policies they may hold. The Policies table tracks each policy’s details, including coverage type, premium, start and end dates, and associated vehicles. Vehicles are linked to policies, detailing each car&apos;s make, model, and Vehicle Identification Number (VIN), ensuring clear identification for underwriting and claims processes.</para>
+                    <para></para>
+                    <para>The Claims table logs all claims submitted by customers, including claim status, amount, and inspection details, facilitating effective tracking from claim submission through to resolution. Additionally, Agents are assigned to customers and assist them in navigating their policy and claim processes, with details stored in the Agents table. The Payments table records policyholder payments, helping ensure smooth billing operations. Furthermore, the Branches table tracks the company&apos;s locations, enabling regional oversight and operational efficiency.</para>
+                    <para></para>
+                    <para>This database supports robust querying and reporting capabilities, empowering customer service, underwriting, claims adjustment, and management functions. With secure data organization and retrieval, the system enhances customer experience and operational performance, enabling managers to make informed decisions, minimize risks, and optimize service delivery.</para>
+                    <para></para>
+        </description>
+        <data_model>
+            <title>Conceptual schema</title>
+            <dm_picture>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="conceptual_schema.png"/>
+                    </imageobject>
+                </mediaobject>
+            </dm_picture>
+            <dm_discussion>
+                        <para> Branches → Agents → MyCustomers → Feedback → Branches</para>
+                        <para>A customer visits a branch, interacts with staff, and provides feedback about their experience. The feedback ties back to the branch.</para>
+                        <para></para>
+                        <para> MyCustomers → Feedback → Agents → Branches → MyCustomers</para>
+                        <para>A customer provides feedback about an agent at a branch. The branch ties back to the customer via the agent.</para>
+                        <para></para>
+                        <para>* MyCustomers → Feedback → Branches → Agents → MyCustomers</para>
+                        <para>A customer interacts with an agent at a branch and provides feedback. The feedback ties back to the customer and branch.</para>
+                        <para></para>
+                        <para> Contracts → Vehicles → Claims → Feedback → Contracts</para>
+                        <para>A contract covers a vehicle that generates a claim. Feedback is given about the process, which ties back to the contrac</para>
+                        <para></para>
+                        <para> MyCustomers → Contracts → Vehicles → Claims → MyCustomers</para>
+                        <para>A customer enters into a contract, insures their vehicle, and files a claim. The claim ties back to the customer.</para>
+                        <para></para>
+                        <para>Claims → Vehicles → Contracts → MyCustomers → Claims</para>
+                        <para>A claim is tied to a vehicle under a contract held by a customer. The loop completes with another claim by the same customer.</para>
+                        <para></para>
+                        <para> Feedback → MyCustomers → Contracts → Payments → Feedback</para>
+                        <para>Feedback provided by a customer relates to their contract and payment, creating a loop of interconnected feedback and transactions.</para>
+                        <para></para>
+                        <para>Vehicles → Contracts → Agents → Branches → Vehicles</para>
+                        <para>A vehicle is covered under a contract managed by an agent at a specific branch, creating a loop that ties the vehicle back to its branch.</para>
+                        <para></para>
+                        <para></para>
+            </dm_discussion>
+        </data_model>
+        <relational_model>
+            <title>Relational schema</title>
+            <rm_picture>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="relational_schema.png"/>
+                    </imageobject>
+                </mediaobject>
+            </rm_picture>
+        </relational_model>
+        <queries>
+            <title>Queries</title>
+            <dotazy>
+                    <dotaz dotaz_id="D3">
+                        <popis_dotazu>
+                                <para>List of customers, who were examined by Agent  Juan Roberts.
+</para>
+                        </popis_dotazu>
+                            <relacni_algebra>mycustomers[agent_id, first_name, last_name, address] * agents(name = &apos;Juan Roberts&apos;)[agent_id]</relacni_algebra>
+                            <sql>SELECT 
+    mycustomers.first_name, 
+    mycustomers.last_name, 
+    mycustomers.address,
+    mycustomers.agent_id
+FROM 
+    mycustomers
+JOIN 
+    agents 
+ON 
+    mycustomers.agent_id = agents.agent_id
+WHERE 
+    agents.name = &apos;Juan Roberts&apos;;</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D5">
+                        <popis_dotazu>
+                                <para>List of customers - name, address who were serviced by agent Juan Roberts ONLY (the customers didn&apos;t have visits to anothe agent).</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{mycustomers[agent_id, first_name, last_name, address] * agents(name = &apos;Juan Roberts&apos;)[agent_id]}
+\
+{mycustomers[agent_id, first_name, last_name, address] * agents(name != &apos;Juan Roberts&apos;)[agent_id]}
+
+</relacni_algebra>
+                            <sql>SELECT DISTINCT 
+    mycustomers.first_name, 
+    mycustomers.last_name, 
+    mycustomers.address,
+    mycustomers.agent_id
+FROM 
+    mycustomers
+WHERE 
+    EXISTS (
+        SELECT 1
+        FROM agents
+        WHERE agents.agent_id = mycustomers.agent_id
+        AND agents.name = &apos;Juan Roberts&apos;
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM agents
+        WHERE agents.agent_id = mycustomers.agent_id
+        AND agents.name != &apos;Juan Roberts&apos;
+    );
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D6">
+                        <popis_dotazu>
+                                <para>List of customer names and addresses who were associated with agents.</para>
+                        </popis_dotazu>
+                            <sql>SELECT DISTINCT 
+    mycustomers.first_name, 
+    mycustomers.last_name, 
+    mycustomers.address
+FROM 
+    mycustomers
+JOIN 
+    agents 
+ON 
+    mycustomers.agent_id = agents.agent_id;
+
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D7">
+                        <popis_dotazu>
+                                <para>List of customer names and addresses who have contracts with vehicles of the make &apos;Toyota&apos;.</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{vehicles(make=&apos;Toyota&apos;) * contracts * mycustomers}[first_name, last_name, address]
+</relacni_algebra>
+                            <sql>SELECT DISTINCT
+    mycustomers.first_name,
+    mycustomers.last_name,
+    mycustomers.address
+FROM
+    vehicles
+JOIN
+    contracts ON vehicles.contract_id = contracts.contract_id
+JOIN
+    mycustomers ON contracts.cus_id = mycustomers.cus_id
+WHERE
+    vehicles.make = &apos;Toyota&apos;;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D8">
+                        <popis_dotazu>
+                                <para>Count of coverage types, count of different contract numbers, and sum of contract durations in years.</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    COUNT(DISTINCT contracts.coverage_type) AS count_coverage_types,
+    COUNT(DISTINCT contracts.contract_number) AS count_different_contract_numbers,
+    SUM(DATE_PART(&apos;year&apos;, contracts.end_date::DATE) - DATE_PART(&apos;year&apos;, contracts.startdate::DATE)) AS sum_contract_durations
+FROM 
+    contracts;
+
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D9">
+                        <popis_dotazu>
+                                <para>Which customers are associated with contracts, and which contracts have no associated customers?</para>
+                        </popis_dotazu>
+                            <sql>SELECT DISTINCT 
+    mycustomers.cus_id, 
+    mycustomers.first_name, 
+    mycustomers.last_name, 
+    contracts.contract_id, 
+    contracts.contract_number
+FROM 
+    mycustomers
+FULL OUTER JOIN contracts 
+ON 
+    mycustomers.cus_id = contracts.cus_id
+ORDER BY 
+    mycustomers.cus_id, contracts.contract_id;
+
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D10">
+                        <popis_dotazu>
+                                <para>List of customers who do not have contracts ending on &apos;2023-12-31&apos;.
+
+</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{mycustomers[cus_id,agent_id, first_name, last_name, address,date_of_birth,email]} \ {contracts(end_date=&apos;2023-12-31&apos;) * mycustomers}[cus_id,agent_id, first_name, last_name, address,date_of_birth,email]
+</relacni_algebra>
+                            <sql>SELECT *
+FROM mycustomers
+WHERE cus_id NOT IN (
+    SELECT DISTINCT cus_id
+    FROM contracts
+    WHERE end_date = &apos;2023-12-31&apos;
+);
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D11">
+                        <popis_dotazu>
+                                <para>Customers who have contracts for each vehicle of make &apos;Toyota&apos; produced after 2010.</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{mycustomers * {contracts * vehicles(make = &apos;Toyota&apos; ∧ year &gt; &apos;2010&apos;)}[cus_id, vehicle_id]}[first_name, last_name, vehicle_id]
+</relacni_algebra>
+                            <sql>SELECT 
+    mycustomers.first_name, 
+    mycustomers.last_name, 
+    sub.vehicle_id
+FROM 
+    mycustomers
+JOIN (
+    SELECT 
+        contracts.cus_id, 
+        vehicles.vehicle_id
+    FROM 
+        contracts
+    JOIN 
+        vehicles 
+    ON 
+        contracts.contract_id = vehicles.contract_id
+    WHERE 
+        vehicles.make = &apos;Toyota&apos; 
+        AND vehicles.year &gt; &apos;2010&apos;
+) AS sub
+ON 
+    mycustomers.cus_id = sub.cus_id;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D12">
+                        <popis_dotazu>
+                                <para>Customers list. For each of them, find the count of contracts they are associated with.</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    mycustomers.cus_id, 
+    mycustomers.first_name, 
+    mycustomers.last_name, 
+    mycustomers.address,
+    (SELECT COUNT(*) 
+     FROM contracts 
+     WHERE contracts.cus_id = mycustomers.cus_id) AS contract_count
+FROM 
+    mycustomers;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D13">
+                        <popis_dotazu>
+                                <para>List of vehicle makes that are associated with contracts.</para>
+                        </popis_dotazu>
+                            <relacni_algebra>vehicles[make] &lt;* contracts
+</relacni_algebra>
+                            <sql>SELECT DISTINCT 
+    vehicles.make
+FROM 
+    vehicles
+WHERE 
+    EXISTS (
+        SELECT 1
+        FROM contracts
+        WHERE contracts.contract_id = vehicles.contract_id
+    );
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D14">
+                        <popis_dotazu>
+                                <para>List of contracts (all attributes) that are either associated with a vehicle or have a payment recorded.</para>
+                        </popis_dotazu>
+                            <sql>SELECT contracts.*
+FROM contracts
+JOIN vehicles ON contracts.contract_id = vehicles.contract_id
+UNION
+SELECT contracts.*
+FROM contracts
+JOIN payment ON contracts.contract_id = payment.contract_id;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D15">
+                        <popis_dotazu>
+                                <para>List of customers who have not provided feedback.</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{mycustomers}[cus_id,agent_id,first_name,last_name,address,date_of_birth,email] \ {mycustomers * feedback}[cus_id,agent_id, first_name, last_name, address,date_of_birth,email]
+</relacni_algebra>
+                            <sql>SELECT *
+FROM mycustomers
+EXCEPT
+SELECT mycustomers.*
+FROM mycustomers
+JOIN feedback ON mycustomers.cus_id = feedback.cus_id;
+
+
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D16">
+                        <popis_dotazu>
+                                <para>List of contracts (all attributes) that are both associated with vehicles and have payments recorded.</para>
+                        </popis_dotazu>
+                            <sql>SELECT contracts.*
+FROM contracts
+JOIN vehicles ON contracts.contract_id = vehicles.contract_id
+INTERSECT
+SELECT contracts.*
+FROM contracts
+JOIN payment ON contracts.contract_id = payment.contract_id;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D17">
+                        <popis_dotazu>
+                                <para>Count of contract types, count of unique customers, and total payment amounts for all contracts.</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    COUNT(DISTINCT contracts.coverage_type) AS count_contract_types,
+    COUNT(DISTINCT contracts.cus_id) AS count_unique_customers,
+    SUM(payment.amount::NUMERIC) AS total_payment_amount
+FROM 
+    contracts
+LEFT JOIN 
+    payment 
+ON 
+    contracts.contract_id = payment.contract_id;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D18">
+                        <popis_dotazu>
+                                <para>For each customer, find the count of their contracts and total payment amounts</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    mycustomers.cus_id,
+    mycustomers.first_name,
+    mycustomers.last_name,
+    (SELECT COUNT(*) 
+     FROM contracts 
+     WHERE contracts.cus_id = mycustomers.cus_id) AS contract_count,
+    (SELECT SUM(payment.amount::NUMERIC) 
+     FROM contracts 
+     JOIN payment ON contracts.contract_id = payment.contract_id
+     WHERE contracts.cus_id = mycustomers.cus_id) AS total_payment
+FROM 
+    mycustomers;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D20">
+                        <popis_dotazu>
+                                <para>Names of customers younger than 40, who have at least 3 contracts for the coverage type &apos;Full Coverage&apos;. List is ordered alphabetically by customer name.</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    mycustomers.cus_id, 
+    mycustomers.first_name, 
+    mycustomers.last_name
+FROM 
+    mycustomers
+JOIN contracts ON mycustomers.cus_id = contracts.cus_id
+WHERE 
+    contracts.coverage_type = &apos;Full Coverage&apos;
+    AND EXTRACT(YEAR FROM AGE(mycustomers.date_of_birth)) &lt; 40
+GROUP BY 
+    mycustomers.cus_id, mycustomers.first_name, mycustomers.last_name
+HAVING 
+    COUNT(contracts.contract_id) &gt;= 3
+ORDER BY 
+    mycustomers.first_name, mycustomers.last_name;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D21">
+                        <popis_dotazu>
+                                <para>For each customer, find the count of their contracts and total payment amounts (if any).using GROUP BY</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    mycustomers.cus_id,
+    mycustomers.first_name,
+    mycustomers.last_name,
+    COUNT(contracts.contract_id) AS contract_count,
+    SUM(payment.amount::NUMERIC) AS total_payment
+FROM 
+    mycustomers
+LEFT JOIN contracts ON mycustomers.cus_id = contracts.cus_id
+LEFT JOIN payment ON contracts.contract_id = payment.contract_id
+GROUP BY 
+    mycustomers.cus_id, mycustomers.first_name, mycustomers.last_name
+HAVING 
+    COUNT(contracts.contract_id) &gt; 0;
+
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D22">
+                        <popis_dotazu>
+                                <para>Create a view with contract details, including customer name, branch location, and coverage type.</para>
+                        </popis_dotazu>
+                            <sql>CREATE OR REPLACE VIEW v_contract_details AS
+SELECT 
+    contracts.contract_id, 
+    contracts.contract_number, 
+    mycustomers.first_name AS customer_first_name, 
+    mycustomers.last_name AS customer_last_name, 
+    branches.location AS branch_location, 
+    contracts.coverage_type, 
+    contracts.startdate, 
+    contracts.end_date
+FROM 
+    contracts
+JOIN mycustomers ON contracts.cus_id = mycustomers.cus_id
+JOIN branches ON contracts.branch_id = branches.branch_id
+ORDER BY 
+    contracts.contract_id;
+
+-- Example usage: Select all contracts that are active as of today.
+SELECT 
+    customer_first_name, 
+    customer_last_name, 
+    branch_location, 
+    coverage_type, 
+    startdate, 
+    end_date
+FROM 
+    v_contract_details
+WHERE 
+    CURRENT_DATE BETWEEN startdate::DATE AND end_date::DATE
+ORDER BY 
+    startdate;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D23">
+                        <popis_dotazu>
+                                <para>Create a view with contract and payment details including customer name, contract number, and payment information.</para>
+                        </popis_dotazu>
+                            <sql>CREATE OR REPLACE VIEW v_contract_payments AS
+SELECT 
+    contracts.contract_id, 
+    contracts.contract_number, 
+    mycustomers.first_name AS customer_first_name, 
+    mycustomers.last_name AS customer_last_name, 
+    payment.payment_date, 
+    payment.payment_method, 
+    payment.amount
+FROM 
+    contracts
+JOIN mycustomers ON contracts.cus_id = mycustomers.cus_id
+LEFT JOIN payment ON contracts.contract_id = payment.contract_id
+ORDER BY 
+    contracts.contract_id;
+
+-- Query to retrieve contracts with payments made in the last 30 days.
+SELECT 
+    customer_first_name, 
+    customer_last_name, 
+    contract_number, 
+    payment_date, 
+    payment_method, 
+    amount
+FROM 
+    v_contract_payments
+WHERE 
+    payment_date &gt;= CURRENT_DATE - INTERVAL &apos;30 days&apos;
+ORDER BY 
+    payment_date DESC;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D24">
+                        <popis_dotazu>
+                                <para>List of agents (name, email) who were visited by EACH customer who also visited agent Juan Roberts.
+</para>
+                        </popis_dotazu>
+                            <sql>SELECT agents.name, agents.email
+FROM agents
+WHERE NOT EXISTS (
+    SELECT mycustomers.cus_id
+    FROM mycustomers
+    WHERE mycustomers.cus_id IN (
+        SELECT mycustomers.cus_id
+        FROM mycustomers
+        JOIN agents ON mycustomers.agent_id = agents.agent_id
+        WHERE agents.name = &apos;Juan Roberts&apos;
+    )
+    AND NOT EXISTS (
+        SELECT mycustomers.agent_id
+        FROM mycustomers
+        WHERE mycustomers.cus_id = mycustomers.cus_id
+        AND mycustomers.agent_id = agents.agent_id
+    )
+);
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D25">
+                        <popis_dotazu>
+                                <para>Customers (cus_id, name), paired with vehicles of make &apos;Toyota&apos;.
+</para>
+                        </popis_dotazu>
+                            <sql>SELECT 
+    mycustomers.cus_id, 
+    CONCAT(mycustomers.first_name, &apos; &apos;, mycustomers.last_name) AS name,
+    vehicles.vehicle_id, 
+    vehicles.make, 
+    vehicles.model
+FROM 
+    mycustomers
+CROSS JOIN vehicles
+WHERE 
+    vehicles.make = &apos;Toyota&apos;;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D26">
+                        <popis_dotazu>
+                                <para>List of customers (all attributes), who have no feedback recorded.
+</para>
+                        </popis_dotazu>
+                            <sql>-- variant 1
+SELECT * 
+FROM mycustomers
+WHERE cus_id NOT IN (
+    SELECT cus_id
+    FROM feedback
+);
+-- variant 2
+SELECT * 
+FROM mycustomers
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM feedback
+    WHERE feedback.cus_id = mycustomers.cus_id
+);
+-- variant 3
+SELECT mycustomers.*
+FROM mycustomers
+LEFT JOIN feedback ON mycustomers.cus_id = feedback.cus_id
+WHERE feedback.cus_id IS NULL;
+
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D27">
+                        <popis_dotazu>
+                                <para>List of contracts (all attributes) associated with vehicles of the make &apos;Hyundai.&apos;
+
+</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{contracts * vehicles(make=&apos;Hyundai&apos;)}[branch_id,contract_id, contract_number, coverage_type, startdate, end_date, cus_id]
+</relacni_algebra>
+                            <sql>SELECT DISTINCT contracts.*
+FROM contracts
+JOIN vehicles ON contracts.contract_id = vehicles.contract_id
+WHERE vehicles.make = &apos;Hyundai&apos;;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D28">
+                        <popis_dotazu>
+                                <para>List of customers (name, address) who were examined by agent Juan Roberts ONLY (they didn&apos;t interact with any other agent).</para>
+                        </popis_dotazu>
+                            <sql>SELECT DISTINCT mycustomers.first_name, mycustomers.last_name, mycustomers.address
+FROM mycustomers
+WHERE EXISTS (
+    SELECT 1
+    FROM agents
+    WHERE agents.agent_id = mycustomers.agent_id
+    AND agents.name = &apos;Juan Roberts&apos;
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM agents
+    WHERE agents.agent_id = mycustomers.agent_id
+    AND agents.name != &apos;Juan Roberts&apos;
+);
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D29">
+                        <popis_dotazu>
+                                <para>List of customers (name, email) who have contracts and provided feedback for the same branch.
+
+</para>
+                        </popis_dotazu>
+                            <sql>SELECT DISTINCT mycustomers.first_name, mycustomers.last_name, mycustomers.email
+FROM mycustomers
+JOIN contracts ON mycustomers.cus_id = contracts.cus_id
+JOIN feedback ON contracts.branch_id = feedback.branch_id
+WHERE contracts.cus_id = feedback.cus_id;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D30">
+                        <popis_dotazu>
+                                <para>Insert payments for all contracts of customer 6 using &quot;Credit Card&quot; and customer 7 using &quot;Bank Transfer,&quot; with random amounts between 10,000 and 15,000, after deleting any existing payments for their contracts.</para>
+                        </popis_dotazu>
+                            <sql>-- Delete any existing payments for customers 6 and 7.
+DELETE FROM payment
+WHERE contract_id IN (
+    SELECT contract_id
+    FROM contracts
+    WHERE cus_id IN (6, 7)
+);
+COMMIT;
+
+-- Insert payments for all contracts of customer 6.
+INSERT INTO payment (contract_id, payment_date, payment_method, amount)
+SELECT 
+    contract_id,
+    CURRENT_DATE AS payment_date,
+    &apos;Credit Card&apos; AS payment_method,
+    10000 + FLOOR(RANDOM() * 5000) AS amount -- Random amount between 10,000 and 15,000
+FROM contracts
+WHERE cus_id = 6;
+
+
+-- Insert payments for all contracts of customer 7.
+INSERT INTO payment (contract_id, payment_date, payment_method, amount)
+SELECT 
+    contract_id,
+    CURRENT_DATE AS payment_date,
+    &apos;Bank Transfer&apos; AS payment_method,
+    10000 + FLOOR(RANDOM() * 5000) AS amount -- Random amount between 10,000 and 15,000
+FROM contracts
+WHERE cus_id = 7;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D31">
+                        <popis_dotazu>
+                                <para>Update the coverage type to &apos;Premium Coverage&apos; for contracts that have more than 2 associated vehicles.</para>
+                        </popis_dotazu>
+                            <sql>UPDATE contracts
+SET coverage_type = &apos;Premium Coverage&apos;
+WHERE contract_id IN (
+    SELECT contract_id
+    FROM vehicles
+    GROUP BY contract_id
+    HAVING COUNT(vehicle_id) &gt; 2
+);
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D32">
+                        <popis_dotazu>
+                                <para>Delete contracts that are associated only with vehicles but have no payments or claims.</para>
+                        </popis_dotazu>
+                            <sql>DELETE FROM contracts
+WHERE contract_id IN (
+    SELECT contract_id
+    FROM contracts
+    WHERE EXISTS (
+        SELECT 1
+        FROM vehicles
+        WHERE vehicles.contract_id = contracts.contract_id
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM payment
+        WHERE payment.contract_id = contracts.contract_id
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM claims
+        WHERE claims.vehicle_id IN (
+            SELECT vehicle_id
+            FROM vehicles
+            WHERE vehicles.contract_id = contracts.contract_id
+        )
+    )
+);
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D33">
+                        <popis_dotazu>
+                                <para>List all customers (with all their attributes) who are not associated with the agent named Monica Walker.</para>
+                        </popis_dotazu>
+                            <relacni_algebra>mycustomers *&gt; {mycustomers * {agents(name = &apos;Monica Walker&apos;)}[agent_id]}
+</relacni_algebra>
+                            <sql>SELECT mycustomers.*
+FROM mycustomers
+RIGHT JOIN agents ON mycustomers.agent_id = agents.agent_id
+WHERE agents.name = &apos;Monica Walker&apos;;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D35">
+                        <popis_dotazu>
+                                <para>List of customers (all attributes), who have either provided feedback or have an active contract.
+
+</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{mycustomers * feedback}[agent_id,address,date_of_birth,email,cus_id, first_name, last_name] ∪ {mycustomers * contracts}[agent_id,address,date_of_birth,email,cus_id, first_name, last_name]
+</relacni_algebra>
+                            <sql>SELECT DISTINCT mycustomers.*
+FROM mycustomers
+JOIN feedback ON mycustomers.cus_id = feedback.cus_id
+UNION
+SELECT DISTINCT mycustomers.*
+FROM mycustomers
+JOIN contracts ON mycustomers.cus_id = contracts.cus_id;
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D36">
+                        <popis_dotazu>
+                                <para>Check the validity of agents who were visited by all customers who also visited Juan Roberts. If the result for agent &quot;123 Josef Pavlicek&quot; was returned in D1, the validity check for Pavlicek would ensure that there are no discrepancies in the results.</para>
+                        </popis_dotazu>
+                            <sql>SELECT agents.name, agents.email
+FROM agents
+WHERE NOT EXISTS (
+    SELECT mycustomers.cus_id
+    FROM mycustomers
+    WHERE mycustomers.cus_id IN (
+        SELECT mycustomers.cus_id
+        FROM mycustomers
+        JOIN agents ON mycustomers.agent_id = agents.agent_id
+        WHERE agents.name = &apos;Juan Roberts&apos;
+    )
+    AND NOT EXISTS (
+        SELECT mycustomers.agent_id
+        FROM mycustomers
+        WHERE mycustomers.cus_id = mycustomers.cus_id
+        AND mycustomers.agent_id = agents.agent_id
+    )
+)
+AND NOT EXISTS (
+    SELECT agents.agent_id
+    FROM agents
+    WHERE NOT EXISTS (
+        SELECT mycustomers.cus_id
+        FROM mycustomers
+        WHERE mycustomers.agent_id = agents.agent_id
+        AND mycustomers.cus_id NOT IN (
+            SELECT mycustomers.cus_id
+            FROM mycustomers
+            WHERE mycustomers.agent_id = agents.agent_id
+        )
+    )
+);
+</sql>
+                    </dotaz>
+                    <dotaz dotaz_id="D37">
+                        <popis_dotazu>
+                                <para>list of customers (with their first and last names) who reserved at least one vehicle of the make &apos;Toyota&apos;.</para>
+                        </popis_dotazu>
+                            <relacni_algebra>{mycustomers * contracts * vehicles(make=&apos;Toyota&apos;)}[first_name, last_name]
+</relacni_algebra>
+                            <sql>SELECT DISTINCT mycustomers.first_name, mycustomers.last_name
+FROM mycustomers
+JOIN contracts USING(cus_id)
+JOIN vehicles USING(contract_id)
+WHERE vehicles.make = &apos;Toyota&apos;;</sql>
+                    </dotaz>
+            </dotazy>
+            <pokryti_dotazu>
+                        <radek>
+                            <kategorie>A</kategorie>
+                            <odkazy>
+                                    <link url="#D3">D3</link>
+                                    <link url="#D6">D6</link>
+                                    <link url="#D7">D7</link>
+                                    <link url="#D9">D9</link>
+                                    <link url="#D11">D11</link>
+                                    <link url="#D14">D14</link>
+                                    <link url="#D15">D15</link>
+                                    <link url="#D16">D16</link>
+                                    <link url="#D17">D17</link>
+                                    <link url="#D18">D18</link>
+                                    <link url="#D20">D20</link>
+                                    <link url="#D21">D21</link>
+                                    <link url="#D22">D22</link>
+                                    <link url="#D23">D23</link>
+                                    <link url="#D26">D26</link>
+                                    <link url="#D27">D27</link>
+                                    <link url="#D29">D29</link>
+                                    <link url="#D33">D33</link>
+                                    <link url="#D35">D35</link>
+                                    <link url="#D37">D37</link>
+                            </odkazy>
+                            <kategorie_popis>A - Positive query on at least two joined tables</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>AR</kategorie>
+                            <odkazy>
+                                    <link url="#D3">D3</link>
+                                    <link url="#D7">D7</link>
+                                    <link url="#D11">D11</link>
+                                    <link url="#D15">D15</link>
+                                    <link url="#D27">D27</link>
+                                    <link url="#D33">D33</link>
+                                    <link url="#D35">D35</link>
+                                    <link url="#D37">D37</link>
+                            </odkazy>
+                            <kategorie_popis>A (RA) - Positive query on at least two joined tables</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>B</kategorie>
+                            <odkazy>
+                                    <link url="#D33">D33</link>
+                            </odkazy>
+                            <kategorie_popis>B - Negative query on at least two joined tables</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>C</kategorie>
+                            <odkazy>
+                                    <link url="#D3">D3</link>
+                                    <link url="#D28">D28</link>
+                            </odkazy>
+                            <kategorie_popis>C - Select only those related to...</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>CR</kategorie>
+                            <odkazy>
+                                    <link url="#D3">D3</link>
+                            </odkazy>
+                            <kategorie_popis>C (RA) - Select only those related to...</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>D1</kategorie>
+                            <odkazy>
+                                    <link url="#D24">D24</link>
+                            </odkazy>
+                            <kategorie_popis>D1 - Select all related to - universal quantification query</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>D2</kategorie>
+                            <odkazy>
+                                    <link url="#D36">D36</link>
+                            </odkazy>
+                            <kategorie_popis>D2 - Result check of D1 query</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F1</kategorie>
+                            <odkazy>
+                                    <link url="#D3">D3</link>
+                                    <link url="#D6">D6</link>
+                                    <link url="#D7">D7</link>
+                                    <link url="#D11">D11</link>
+                                    <link url="#D14">D14</link>
+                                    <link url="#D15">D15</link>
+                                    <link url="#D16">D16</link>
+                                    <link url="#D18">D18</link>
+                                    <link url="#D20">D20</link>
+                                    <link url="#D22">D22</link>
+                                    <link url="#D23">D23</link>
+                                    <link url="#D24">D24</link>
+                                    <link url="#D27">D27</link>
+                                    <link url="#D29">D29</link>
+                                    <link url="#D35">D35</link>
+                                    <link url="#D36">D36</link>
+                            </odkazy>
+                            <kategorie_popis>F1 - JOIN ON</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F1R</kategorie>
+                            <odkazy>
+                                    <link url="#D3">D3</link>
+                                    <link url="#D7">D7</link>
+                                    <link url="#D11">D11</link>
+                                    <link url="#D15">D15</link>
+                                    <link url="#D27">D27</link>
+                                    <link url="#D35">D35</link>
+                            </odkazy>
+                            <kategorie_popis>F1 (RA) - JOIN ON</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F2</kategorie>
+                            <odkazy>
+                                    <link url="#D37">D37</link>
+                            </odkazy>
+                            <kategorie_popis>F2 - NATURAL JOIN|JOIN USING</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F3</kategorie>
+                            <odkazy>
+                                    <link url="#D25">D25</link>
+                            </odkazy>
+                            <kategorie_popis>F3 - CROSS JOIN</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F4</kategorie>
+                            <odkazy>
+                                    <link url="#D17">D17</link>
+                                    <link url="#D21">D21</link>
+                                    <link url="#D23">D23</link>
+                                    <link url="#D26">D26</link>
+                                    <link url="#D33">D33</link>
+                            </odkazy>
+                            <kategorie_popis>F4 - LEFT|RIGHT OUTER JOIN</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F4R</kategorie>
+                            <odkazy>
+                                    <link url="#D33">D33</link>
+                            </odkazy>
+                            <kategorie_popis>F4 (RA) - LEFT|RIGHT OUTER JOIN</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>F5</kategorie>
+                            <odkazy>
+                                    <link url="#D9">D9</link>
+                            </odkazy>
+                            <kategorie_popis>F5 - FULL (OUTER) JOIN</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>G1</kategorie>
+                            <odkazy>
+                                    <link url="#D5">D5</link>
+                                    <link url="#D10">D10</link>
+                                    <link url="#D13">D13</link>
+                                    <link url="#D24">D24</link>
+                                    <link url="#D26">D26</link>
+                                    <link url="#D28">D28</link>
+                                    <link url="#D30">D30</link>
+                                    <link url="#D31">D31</link>
+                                    <link url="#D32">D32</link>
+                                    <link url="#D36">D36</link>
+                            </odkazy>
+                            <kategorie_popis>G1 - Nested query in WHERE clause</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>G1R</kategorie>
+                            <odkazy>
+                                    <link url="#D5">D5</link>
+                                    <link url="#D10">D10</link>
+                                    <link url="#D13">D13</link>
+                            </odkazy>
+                            <kategorie_popis>G1 (RA) - Nested query in WHERE clause</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>G2</kategorie>
+                            <odkazy>
+                                    <link url="#D11">D11</link>
+                            </odkazy>
+                            <kategorie_popis>G2 - Nested query in FROM clause</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>G3</kategorie>
+                            <odkazy>
+                                    <link url="#D12">D12</link>
+                                    <link url="#D18">D18</link>
+                            </odkazy>
+                            <kategorie_popis>G3 - Nested query in SELECT clause</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>G4</kategorie>
+                            <odkazy>
+                                    <link url="#D5">D5</link>
+                                    <link url="#D13">D13</link>
+                                    <link url="#D24">D24</link>
+                                    <link url="#D26">D26</link>
+                                    <link url="#D28">D28</link>
+                                    <link url="#D32">D32</link>
+                                    <link url="#D36">D36</link>
+                            </odkazy>
+                            <kategorie_popis>G4 - Correlated nested query (EXISTS|NOT EXISTS)</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>G4R</kategorie>
+                            <odkazy>
+                                    <link url="#D5">D5</link>
+                                    <link url="#D13">D13</link>
+                            </odkazy>
+                            <kategorie_popis>G4 (RA) - Correlated nested query (EXISTS|NOT EXISTS)</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>H1</kategorie>
+                            <odkazy>
+                                    <link url="#D14">D14</link>
+                                    <link url="#D35">D35</link>
+                            </odkazy>
+                            <kategorie_popis>H1 - Set unification - UNION</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>H1R</kategorie>
+                            <odkazy>
+                                    <link url="#D35">D35</link>
+                            </odkazy>
+                            <kategorie_popis>H1 (RA) - Set unification - UNION</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>H2</kategorie>
+                            <odkazy>
+                                    <link url="#D15">D15</link>
+                            </odkazy>
+                            <kategorie_popis>H2 - Set difference - MINUS or EXCEPT</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>H3</kategorie>
+                            <odkazy>
+                                    <link url="#D16">D16</link>
+                            </odkazy>
+                            <kategorie_popis>H3 - Set intersection - INTERSECT</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>I1</kategorie>
+                            <odkazy>
+                                    <link url="#D8">D8</link>
+                                    <link url="#D12">D12</link>
+                                    <link url="#D17">D17</link>
+                                    <link url="#D18">D18</link>
+                                    <link url="#D20">D20</link>
+                                    <link url="#D21">D21</link>
+                                    <link url="#D31">D31</link>
+                            </odkazy>
+                            <kategorie_popis>I1 - Aggregate functions (count|sum|min|max|avg)</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>I2</kategorie>
+                            <odkazy>
+                                    <link url="#D20">D20</link>
+                                    <link url="#D21">D21</link>
+                                    <link url="#D31">D31</link>
+                            </odkazy>
+                            <kategorie_popis>I2 - Aggregate function over grouped rows - GROUP BY (HAVING)</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>J</kategorie>
+                            <odkazy>
+                                    <link url="#D26">D26</link>
+                            </odkazy>
+                            <kategorie_popis>J - Same query in 3 different sql statements</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>K</kategorie>
+                            <odkazy>
+                                    <link url="#D20">D20</link>
+                            </odkazy>
+                            <kategorie_popis>K - All clauses in one query - SELECT FROM WHERE GROUP BY HAVING ORDER BY</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>L</kategorie>
+                            <odkazy>
+                                    <link url="#D22">D22</link>
+                                    <link url="#D23">D23</link>
+                            </odkazy>
+                            <kategorie_popis>L - View</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>M</kategorie>
+                            <odkazy>
+                                    <link url="#D23">D23</link>
+                            </odkazy>
+                            <kategorie_popis>M - Query over a view</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>N</kategorie>
+                            <odkazy>
+                                    <link url="#D30">D30</link>
+                            </odkazy>
+                            <kategorie_popis>N - INSERT, which insert a set of rows, which are the result of another subquery (an INSERT command which has VALUES clause replaced by a nested query.</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>O</kategorie>
+                            <odkazy>
+                                    <link url="#D31">D31</link>
+                            </odkazy>
+                            <kategorie_popis>O - UPDATE with nested SELECT statement</kategorie_popis>
+                        </radek>
+                        <radek>
+                            <kategorie>P</kategorie>
+                            <odkazy>
+                                    <link url="#D30">D30</link>
+                                    <link url="#D32">D32</link>
+                            </odkazy>
+                            <kategorie_popis>P - DELETE with nested SELECT statement</kategorie_popis>
+                        </radek>
+            </pokryti_dotazu>
+        </queries>
+        <scripts>
+            <title>Scripts</title>
+            <para>
+                <link url="./create.sql">create.sql</link>
+            </para>
+            <para>
+                <link url="./insert.sql">insert.sql</link>
+            </para>
+        </scripts>
+        <conclussions>
+            <title>Conclusion</title>
+                    <para>###  **This project demonstrated the effective application of advanced SQL queries and database management techniques to address diverse real-world scenarios. By utilizing a well-structured schema and realistic data, it explored various query categories, including subqueries, joins, aggregations, set operations, and view creation. Each task was carefully designed to meet specific business requirements, such as identifying unique customer behaviors, managing contract and payment records, and analyzing relationships between entities. The project successfully showcased the design and optimization of efficient SQL queries for data retrieval, manipulation, and transformation while ensuring data integrity through appropriate constraints, joins, and validation techniques. Complex requirements were addressed using advanced SQL constructs, including subqueries, cross joins, unions, and set operations, to extract meaningful insights. Additionally, the creation of reusable and modular queries, such as views and common table expressions (CTEs), demonstrated scalability and maintainability for future analytical tasks. This project highlights the significance of SQL  and Relational Algebra  as a powerful tools for database management and decision-making, providing a robust foundation for extending these methods to other domains and fostering a deeper understanding of relational databases and their practical applications.**</para>
+        </conclussions>
+        <references>
+            <title>References</title>
+                    <para>[1] W3school https://www.w3schools.com/sql/default.asp</para>
+                    <para>[2]  https://www.mockaroo.com Data Genrator </para>
+                    <para>[3] Jiří Hunka Youtube Channel (How To Create Sql and RA Queries). </para>
+                    <para>[4] Boat Livery - Sample of Semstral Work</para>
+                    <para>[5]  BIE-DBS Cookbook</para>
+                    <para></para>
+        </references>
+    </content>
+</sproject>
